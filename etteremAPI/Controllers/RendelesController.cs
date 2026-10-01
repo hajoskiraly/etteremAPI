@@ -60,6 +60,7 @@ namespace etteremAPI.Controllers
 
                     using (var reader = cmd.ExecuteReader())
                     {
+                           
                         var pofon = new rendeles
                         {
                             Id = reader.GetInt32("Id"),
@@ -99,40 +100,78 @@ namespace etteremAPI.Controllers
             
         }
         [HttpPut("update")]
-        public object UpdateRendeles(Models.DTOs.Updaterendeles rendeles)
+        public object UpdateRendeles(int id, string dish, string description)
         {
             var connection = new MySqlConnection(ConnectionString);
-            
+
             connection.Open();
             string sql = @"UPDATE rendeles SET Dish = @Dish, description = @description, UpdateTIme = @UpdateTIme WHERE Id = @Id";
             var command = new MySqlCommand(sql, connection);
-                
-            command.Parameters.AddWithValue("@Dish", rendeles.Dish);
-            command.Parameters.AddWithValue("@description", rendeles.Description);
-            command.Parameters.AddWithValue("@UpdateTIme", rendeles.UpdateTime);
-            
-            command.ExecuteNonQuery();
 
-            connection.Close();
-            
-            return new { message = "sikeres frissites", result = rendeles };
-        }
-        [HttpDelete("delete")]
-        public object DeleteRendeles(int id)
-        {
-            var connection = new MySqlConnection(ConnectionString);
-
-            connection.Open();
-            string sql = @"DELETE FROM rendeles WHERE Id = @Id";
-            var command = new MySqlCommand(sql, connection);
-
+            command.Parameters.AddWithValue("@Dish", dish);
+            command.Parameters.AddWithValue("@description", description);
+            var updateTime = DateTime.Now;
+            command.Parameters.AddWithValue("@UpdateTIme", updateTime);
             command.Parameters.AddWithValue("@Id", id);
+
             command.ExecuteNonQuery();
+
             connection.Close();
 
-            return new { message = "sikeres torles", deletedId = id };
-        }
+            var updated = new rendeles
+            {
+                Id = id,
+                Dish = dish,
+                Description = description,
+                UpdateTIme = updateTime
+            };
 
+            return new { message = "sikeres frissites", result = updated };
+        }
+        [HttpGet("all")]
+            public object getAllRendeles()
+        {
+            List<Models.rendeles> rendelesek = new List<Models.rendeles>();
+            using (var connection = new MySqlConnection(ConnectionString))
+            {
+                connection.Open();
+                using (var command = new MySqlCommand("SELECT * FROM rendeles", connection))
+                {
+                    using (var reader = command.ExecuteReader())
+                    {
+                        while (reader.Read())
+                        {
+                            Models.rendeles rendeles = new Models.rendeles
+                            {
+                                Id = reader.GetInt32("Id"),
+                                Dish = reader.GetString("Dish"),
+                                Description = reader.GetString("description"),
+                                OrderTime = reader.GetDateTime("OrderTime"),
+                                UpdateTIme = reader.GetDateTime("UpdateTIme"),
+                                VendegId = reader.GetInt32("VendegId")
+                            };
+                            rendelesek.Add(rendeles);
+                        }
+                    }
+                }
+            }
+            return rendelesek;
+        }
+        [HttpGet("getvendeghowmanyrendeles")]
+        public object GetVendegHowManyRendeles(int vendegId)
+        {
+            using (var connection = new MySqlConnection(ConnectionString))
+            {
+                connection.Open();
+                string sql = @"SELECT COUNT(*) FROM rendeles WHERE VendegId = @vendegId";
+                using (var command = new MySqlCommand(sql, connection))
+                {
+                    command.Parameters.AddWithValue("@vendegId", vendegId);
+                    int count = Convert.ToInt32(command.ExecuteScalar());
+                    return new { VendegId = vendegId, RendelesCount = count };
+                }
+            }
+        }
     }
     
 }
