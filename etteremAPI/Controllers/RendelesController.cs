@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.Extensions.ObjectPool;
 using MySqlConnector;
+using System.Security.Cryptography;
+using etteremAPI.Models.DTOs;
 
 namespace etteremAPI.Controllers
 {
@@ -77,21 +79,60 @@ namespace etteremAPI.Controllers
         [HttpPost("add")]
         public object AddNewRendeles(Models.DTOs.AddNewrendeles rendeles)
         {
-            using (var connection = new MySqlConnection(ConnectionString))
-            {
-                connection.Open();
-                string sql = @"INSERT INTO rendeles (Dish, description, OrderTime, UpdateTIme, VendegId) VALUES (@Dish, @description, @OrderTime, @UpdateTIme, @VendegId)";
-                using (var command = new MySqlCommand(sql, connection))
-                {
-                    command.Parameters.AddWithValue("@Dish", rendeles.Dish);
-                    command.Parameters.AddWithValue("@description", rendeles.Description);
-                    command.Parameters.AddWithValue("@OrderTime", DateTime.Now);
-                    command.Parameters.AddWithValue("@UpdateTIme", DateTime.Now);
-                    command.Parameters.AddWithValue("@VendegId", 1);
-                    return ("sikeres felvetel");
-                }
-            }
+            var connection = new MySqlConnection(ConnectionString);
+            
+            connection.Open();
+            string sql = @"INSERT INTO rendeles (Dish, description, OrderTime, UpdateTIme) VALUES (@Dish, @description, @OrderTime, @UpdateTIme)";
+            var command = new MySqlCommand(sql, connection);
+                
+            command.Parameters.AddWithValue("@Dish", rendeles.Dish);
+            command.Parameters.AddWithValue("@description", rendeles.Description);
+            command.Parameters.AddWithValue("@OrderTime", DateTime.Now);
+            command.Parameters.AddWithValue("@UpdateTIme", DateTime.Now);
+
+            command.ExecuteNonQuery();
+
+            connection.Close();
+            
+            return new { message  = "sikeres felvetel", result = rendeles };
+                 
+            
         }
+        [HttpPut("update")]
+        public object UpdateRendeles(Models.DTOs.Updaterendeles rendeles)
+        {
+            var connection = new MySqlConnection(ConnectionString);
+            
+            connection.Open();
+            string sql = @"UPDATE rendeles SET Dish = @Dish, description = @description, UpdateTIme = @UpdateTIme WHERE Id = @Id";
+            var command = new MySqlCommand(sql, connection);
+                
+            command.Parameters.AddWithValue("@Dish", rendeles.Dish);
+            command.Parameters.AddWithValue("@description", rendeles.Description);
+            command.Parameters.AddWithValue("@UpdateTIme", rendeles.UpdateTime);
+            
+            command.ExecuteNonQuery();
+
+            connection.Close();
+            
+            return new { message = "sikeres frissites", result = rendeles };
+        }
+        [HttpDelete("delete")]
+        public object DeleteRendeles(int id)
+        {
+            var connection = new MySqlConnection(ConnectionString);
+
+            connection.Open();
+            string sql = @"DELETE FROM rendeles WHERE Id = @Id";
+            var command = new MySqlCommand(sql, connection);
+
+            command.Parameters.AddWithValue("@Id", id);
+            command.ExecuteNonQuery();
+            connection.Close();
+
+            return new { message = "sikeres torles", deletedId = id };
+        }
+
     }
     
 }
